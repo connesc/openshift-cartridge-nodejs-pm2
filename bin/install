@@ -3,16 +3,6 @@
 source "$OPENSHIFT_CARTRIDGE_SDK_BASH"
 source "${OPENSHIFT_NODEJS_DIR}lib/util"
 
-# Add environment variables
-echo "production"                        > env/NODE_ENV
-echo "$OPENSHIFT_NODEJS_IP"              > env/NODE_IP
-echo "$OPENSHIFT_NODEJS_PORT"            > env/NODE_PORT
-echo "${OPENSHIFT_DATA_DIR}.npm"         > env/npm_config_cache
-echo "${OPENSHIFT_DATA_DIR}.npmrc"       > env/npm_config_userconfig
-echo "${OPENSHIFT_DATA_DIR}.npm-init.js" > env/npm_config_init_module
-echo "$TMP"                              > env/npm_config_tmp
-echo "${OPENSHIFT_DATA_DIR}.pm2"         > env/PM2_HOME
-
 update_all
 
 client_result "Node.js $(nodejs_version), npm $(npm --version) and PM2 $(local_version pm2) installed"

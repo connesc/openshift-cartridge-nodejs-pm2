@@ -125,16 +125,11 @@ function update_pm2 {
   fi
 
   # Prepare the PM2 home if needed
-  echo "$PM2_HOME/logs" >> "${OPENSHIFT_DATA_DIR}install.txt"
   if [ ! -L "$PM2_HOME/logs" ]; then
-    echo Prepare >> "${OPENSHIFT_DATA_DIR}install.txt"
     mkdir -p "$PM2_HOME"
-    ls -l "$PM2_HOME" >> "${OPENSHIFT_DATA_DIR}install.txt"
     ln -fs "${OPENSHIFT_LOG_DIR}pm2.log" "$PM2_HOME/pm2.log"
     rm -rf "$PM2_HOME/logs"
     ln -s "$OPENSHIFT_LOG_DIR" "$PM2_HOME/logs"
-    echo Prepared >> "${OPENSHIFT_DATA_DIR}install.txt"
-    ls -l "$PM2_HOME" >> "${OPENSHIFT_DATA_DIR}install.txt"
   fi
 
   # Update
@@ -142,12 +137,8 @@ function update_pm2 {
 
   # Reload if needed
   if is_running "$PM2_HOME/pm2.pid"; then
-    echo Update >> "${OPENSHIFT_DATA_DIR}install.txt"
     pm2 update
   fi
-
-  echo Done >> "${OPENSHIFT_DATA_DIR}install.txt"
-  ls -l "$PM2_HOME" >> "${OPENSHIFT_DATA_DIR}install.txt"
 
   # Output result
   echo "PM2 updated to $(local_version pm2)"
