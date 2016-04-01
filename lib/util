@@ -142,7 +142,7 @@ function update_all {
 }
 
 # Load PM2 variables from the repository to the environment
-load_pm2_env {
+function load_pm2_env {
   if [ -z "$PM2_ENTRY_POINT" ] && [ -f "${OPENSHIFT_REPO_DIR}.openshift/PM2_ENTRY_POINT" ]; then
     export PM2_ENTRY_POINT="$(cat "${OPENSHIFT_REPO_DIR}.openshift/PM2_ENTRY_POINT")"
   fi
