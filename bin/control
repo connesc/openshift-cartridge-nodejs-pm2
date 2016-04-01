@@ -1,0 +1,46 @@
+#!/bin/bash
+
+source "$OPENSHIFT_CARTRIDGE_SDK_BASH"
+source "${OPENSHIFT_NODEJS_DIR}lib/util"
+
+function start {
+  load_pm2_env
+  pm2 start "${OPENSHIFT_NODEJS_DIR}conf/ecosystem.json"
+}
+
+function stop {
+  pm2 kill
+}
+
+function status {
+  pm2 status
+}
+
+function reload {
+  pm2 reload all
+}
+
+function restart {
+  stop
+  start
+}
+
+function build() {
+  update_all
+  reload
+}
+
+function tidy {
+  pm2 flush
+}
+
+case "$1" in
+  build)     build ;;
+  start)     start ;;
+  stop)      stop ;;
+  status)    status ;;
+  reload)    reload ;;
+  restart)   restart ;;
+  tidy)      tidy ;;
+  *)         exit 0
+esac

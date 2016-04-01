@@ -1,0 +1,10 @@
+{
+  "name": "openshift-cartridge-nodejs-pm2-template",
+  "version": "0.1.0",
+  "description": "Custom Node.js cartridge for OpenShift - sample application",
+  "license": "ISC",
+  "author": "Cédric Connes <cedric.connes@gmail.com>",
+  "main": "server.js",
+  "repository": "github:connesc/openshift-cartridge-nodejs-pm2",
+  "private": true
+}

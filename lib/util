@@ -1,0 +1,153 @@
+#!/bin/bash
+
+# Retrieve the installed Node.js version (if any)
+function nodejs_version {
+  if which node > /dev/null; then
+    local VERSION_STRING="$(node --version)"
+    echo "${VERSION_STRING#v}"
+  fi
+}
+
+# Update Node.js
+function update_nodejs {
+  # Select the wanted Node.js version
+  if [ -n "$NODE_VERSION" ]; then
+    local WANTED="resolve/$NODE_VERSION"
+  elif [ -f "${OPENSHIFT_REPO_DIR}.openshift/NODE_VERSION" ]; then
+    local WANTED="resolve/$(cat "${OPENSHIFT_REPO_DIR}.openshift/NODE_VERSION")"
+  else
+    local WANTED="stable"
+  fi
+
+  local VERSION_URL="https://semver.io/node/$WANTED"
+  local LATEST="$(curl --silent --max-time 5 "$VERSION_URL")"
+
+  if [ -z "$LATEST" ]; then
+    echo "Could not retrieve Node.js version information from $VERSION_URL"
+    return 1
+  fi
+
+  # Do not update if not needed
+  if [ "$(nodejs_version)" = "$LATEST" ]; then
+    return
+  fi
+
+  local ARCHIVE_URL="https://nodejs.org/dist/v$LATEST/node-v$LATEST-linux-x64.tar.gz"
+  local ARCHIVE="$(mktemp)"
+  local DIRECTORY="${OPENSHIFT_DATA_DIR}.nodejs"
+
+  # Download
+  if ! curl -L -o "$ARCHIVE" "$ARCHIVE_URL"; then
+    return 1
+  fi
+
+  # Install
+  rm -rf "$DIRECTORY"
+  mkdir "$DIRECTORY"
+  tar xzvf "$ARCHIVE" --strip-components 1 -C "$DIRECTORY"
+
+  # Remove downloaded archive
+  rm "$ARCHIVE"
+
+  # Output result
+  echo "Node.js updated to $(nodejs_version)"
+}
+
+# Retrieve the latest package version matching the given semver range
+function remote_version {
+  local PACKAGE_URL="$(npm config get registry)$1/$2"
+  local PACKAGE="$(curl --silent --max-time 5 "$PACKAGE_URL")"
+  node --print --eval "($PACKAGE).version"
+}
+
+# Retrieve the installed version of the given global package (if any)
+function local_version {
+  NODE_PATH="${OPENSHIFT_DATA_DIR}.nodejs/lib/node_modules" \
+    node --print --eval "require('$1/package.json').version" 2> /dev/null
+}
+
+# Update npm
+function update_npm {
+  # Select the wanted npm version
+  if [ -n "$NPM_VERSION" ]; then
+    local WANTED="$NPM_VERSION"
+  elif [ -f "${OPENSHIFT_REPO_DIR}.openshift/NPM_VERSION" ]; then
+    local WANTED="$(cat "${OPENSHIFT_REPO_DIR}.openshift/NPM_VERSION")"
+  else
+    local WANTED="latest"
+  fi
+
+  local LATEST="$(remote_version npm "$WANTED")"
+
+  if [ -z "$LATEST" ]; then
+    echo "Could not retrieve npm version information from the npm registry"
+    return 1
+  fi
+
+  # Do not update if not needed
+  if [ "$(npm --version)" = "$LATEST" ]; then
+    return
+  fi
+
+  # Update
+  npm install -g "npm@$LATEST"
+
+  # Output result
+  echo "Npm updated to $(npm --version)"
+}
+
+# Update PM2
+function update_pm2 {
+  # Select the wanted PM2 version
+  if [ -n "$PM2_VERSION" ]; then
+    local WANTED="$PM2_VERSION"
+  elif [ -f "${OPENSHIFT_REPO_DIR}.openshift/PM2_VERSION" ]; then
+    local WANTED="$(cat "${OPENSHIFT_REPO_DIR}.openshift/PM2_VERSION")"
+  else
+    local WANTED="latest"
+  fi
+
+  local LATEST="$(remote_version pm2 "$WANTED")"
+
+  if [ -z "$LATEST" ]; then
+    echo "Could not retrieve PM2 version information from the npm registry"
+    return 1
+  fi
+
+  # Do not update if not needed
+  if [ "$(local_version pm2)" = "$LATEST" ]; then
+    return
+  fi
+
+  # Prepare the PM2 home id needed
+  if [ ! -L "$PM2_HOME/logs" ]; then
+    mkdir -p "$PM2_HOME"
+    rm -rf "$PM2_HOME/logs"
+    ln -fsT "${HOME}/app-root/logs" "$PM2_HOME/logs"
+  fi
+
+  # Update
+  npm install -g "pm2@$LATEST"
+  pm2 update
+
+  # Output result
+  echo "PM2 updated to $(local_version pm2)"
+}
+
+# Update Node.js, npm and PM2
+function update_all {
+  update_nodejs \
+    && update_npm \
+    && update_pm2
+}
+
+# Load PM2 variables from the repository to the environment
+load_pm2_env {
+  if [ -z "$PM2_ENTRY_POINT" ] && [ -f "${OPENSHIFT_REPO_DIR}.openshift/PM2_ENTRY_POINT" ]; then
+    export PM2_ENTRY_POINT="$(cat "${OPENSHIFT_REPO_DIR}.openshift/PM2_ENTRY_POINT")"
+  fi
+
+  if [ -z "$PM2_INSTANCES" ] && [ -f "${OPENSHIFT_REPO_DIR}.openshift/PM2_INSTANCES" ]; then
+    export PM2_INSTANCES="$(cat "${OPENSHIFT_REPO_DIR}.openshift/PM2_INSTANCES")"
+  fi
+}

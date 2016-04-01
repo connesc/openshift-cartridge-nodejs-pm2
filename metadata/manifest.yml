@@ -1,0 +1,52 @@
+---
+Name: nodejs-pm2
+Description: Custom Node.js cartridge supervised by PM2 and auto-updating on each build
+Version: '4.0.0'
+License: Node.js License
+License-Url: https://raw.githubusercontent.com/nodejs/node/master/LICENSE
+Vendor: Node.js Foundation
+Website: https://nodejs.org/
+Display-Name: Node.js with PM2
+Cartridge-Short-Name: NODEJS
+Cartridge-Version: '0.1.0'
+Cartridge-Vendor: connesc
+Source-Url: https://github.com/connesc/openshift-cartridge-nodejs-pm2.git
+Categories:
+- service
+- javascript
+- nodejs
+- web_framework
+Help-Topics:
+  Node.js Manual & Documentation: https://nodejs.org/api/
+Provides:
+- nodejs
+- pm2
+Scaling:
+  Min: 1
+  Max: -1
+Publishes:
+  get-doc-root:
+    Type: FILESYSTEM:doc-root
+Subscribes:
+  set-env:
+    Type: ENV:*
+    Required: false
+Endpoints:
+- Private-IP-Name: IP
+  Private-Port-Name: PORT
+  Private-Port: 8080
+  Public-Port-Name: PROXY_PORT
+  Protocols:
+  - http
+  - ws
+  Options:
+    primary: true
+  Mappings:
+  - Frontend: ''
+    Backend: ''
+    Options:
+      websocket: true
+  - Frontend: /health
+    Backend: ''
+    Options:
+      health: true
