@@ -1,7 +1,7 @@
 #!/bin/bash
 
 source "$OPENSHIFT_CARTRIDGE_SDK_BASH"
-source "${HOME}nodejs/lib/util"
+source "${OPENSHIFT_NODEJS_DIR}lib/util"
 
 # Add environment variables
 echo "production"                        > env/NODE_ENV
