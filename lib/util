@@ -96,6 +96,11 @@ function update_npm {
   echo "Npm updated to $(npm --version)"
 }
 
+function is_running {
+  local PID="$(cat "$1" 2> /dev/null)"
+  [ -n "$PID" ] && kill -0 "$PID" 2> /dev/null
+}
+
 # Update PM2
 function update_pm2 {
   # Select the wanted PM2 version
@@ -119,16 +124,21 @@ function update_pm2 {
     return
   fi
 
-  # Prepare the PM2 home id needed
+  # Prepare the PM2 home if needed
   if [ ! -L "$PM2_HOME/logs" ]; then
     mkdir -p "$PM2_HOME"
+    ln -fs "${OPENSHIFT_LOG_DIR}pm2.log" "$PM2_HOME/pm2.log"
     rm -rf "$PM2_HOME/logs"
-    ln -fsT "${HOME}/app-root/logs" "$PM2_HOME/logs"
+    ln -s "$OPENSHIFT_LOG_DIR" "$PM2_HOME/logs"
   fi
 
   # Update
   npm install -g "pm2@$LATEST"
-  pm2 update
+
+  # Reload if needed
+  if is_running "$PM2_HOME/pm2.pid"; then
+    pm2 update
+  fi
 
   # Output result
   echo "PM2 updated to $(local_version pm2)"
